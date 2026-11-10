@@ -17,7 +17,7 @@ apps that use it each have their own README and container image.
 
 | Path | What it is |
 |---|---|
-| `python/fortunes_platform/` | The server half (package `fortunes-platform`): Server-Sent Events framing, the voice-provider boundary |
+| `python/fortunes_platform/` | The server half (package `fortunes-platform`): sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the voice providers, and Server-Sent Events framing |
 | `svelte/` | Components and types for the settings pages |
 | `testing/viewport.ts` | Playwright checks for phone and desktop layouts: on screen, reachable by finger, nothing poking out sideways |
 | `testing/static-server.mjs` | A stand-in static host for testing a single-page app's static build |
@@ -32,7 +32,7 @@ Server (`backend/pyproject.toml`):
 
 ```toml
 dependencies = [
-    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.1.0.tar.gz#subdirectory=python",
+    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.2.0.tar.gz#subdirectory=python",
 ]
 
 [tool.hatch.metadata]
@@ -43,9 +43,30 @@ Web pages (`frontend/package.json`):
 
 ```json
 "devDependencies": {
-	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.1.0.tar.gz"
+	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.2.0.tar.gz"
 }
 ```
+
+The server modules need to know which app they are serving: its name, the
+prefix of its environment variables, its data directory and its database. The
+app hands those in once, from its package's `__init__.py`, before anything
+else runs (see `fortunes_platform/host.py`):
+
+```python
+from fortunes_platform import host
+
+host.configure(host.Host(
+    id="myapp",                    # the session cookie is myapp_session
+    name="My App",
+    env_prefix="MYAPP_",           # MYAPP_SECRET_KEY, MYAPP_AUTH_MODE, ...
+    data_dir=lambda: paths.data_dir(),
+    db=lambda: importlib.import_module("myapp.db"),
+))
+```
+
+The app's database module provides the tables the shared code reads (users,
+sessions, settings and the spending ledger); see `Host.db` for the functions
+called.
 
 ```ts
 import SettingCard from 'fortunes-platform/SettingCard.svelte';

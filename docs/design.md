@@ -49,7 +49,11 @@ Each step leaves both apps' full test suites passing, and is its own release.
 1. **What is already identical.** Moves with no change in behaviour, and
    proves the packaging end to end.
 2. **What differs only by name.** The app's name, settings prefix and data
-   directory are handed in.
+   directory are handed in. *Done in v0.2.0 for the server half:* sign-in,
+   users, sessions, encryption at rest, config, spending limits and the voice
+   adapters, with the app handing in its names through `host.configure`. The
+   app also hands in its database module, so these move ahead of the
+   database core (step 5). The web pages on that row move with step 4.
 3. **Shared styles.** The colour tokens and the small classes every page
    repeats (dim text, errors, danger buttons, the Self-hosted tag, disabled
    buttons).
