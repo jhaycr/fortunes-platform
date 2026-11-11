@@ -36,7 +36,7 @@ class LimitExceeded(Exception):
 
 
 def _value(key: str) -> float | None:
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     raw = cfgfile.get("limits", key)
     if raw is None:
@@ -73,7 +73,7 @@ def _exempt(user: str) -> bool:
 
 def status(user: str) -> dict:
     """Where the user stands, for /api/me and the admin view."""
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     cfg = config()
     since = midnight_ts()
@@ -104,7 +104,7 @@ def charge_reading(user: str, fingerprint: str, legacy: str | None = None) -> No
     written. Raises LimitExceeded when the cap is reached and the
     fingerprint is new.
     """
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     if _exempt(user):
         return
@@ -122,7 +122,7 @@ def precheck_reading(user: str, fingerprint: str, legacy: str | None = None) -> 
     charge after the provider call succeeds (a failed call must not consume
     a slot). A fingerprint already charged today always passes (retry).
     """
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     if _exempt(user):
         return
@@ -145,7 +145,7 @@ def charge_reading_once(user: str, fingerprint: str, legacy: str | None = None) 
     a reading charged at creation streams free forever, even across
     midnight, while a never-charged reading pays when interpretation starts.
     """
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     if _exempt(user):
         return
@@ -157,7 +157,7 @@ def charge_reading_once(user: str, fingerprint: str, legacy: str | None = None) 
 
 
 def check_tokens(user: str) -> None:
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     if _exempt(user):
         return
@@ -167,7 +167,7 @@ def check_tokens(user: str) -> None:
 
 
 def check_minutes(user: str) -> None:
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     if _exempt(user):
         return

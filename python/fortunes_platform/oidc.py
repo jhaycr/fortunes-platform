@@ -38,7 +38,7 @@ _oauth_key: tuple | None = None
 def oidc_config() -> dict | None:
     """Resolved issuer/client_id/client_secret, or None when not configured."""
     from fortunes_platform import crypto
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     issuer = str(
         cfgfile.get("auth", "issuer")

@@ -74,7 +74,15 @@ Each step leaves both apps' full test suites passing, and is its own release.
 5. **What has drifted.** Merged one piece at a time, and every fix that only
    one app has goes to both as part of the merge. The database core gets its
    own migration numbering, separate from each app's, with a one-time mapping
-   for existing databases.
+   for existing databases. *Done in v0.5.0, on the server:* the journal
+   database (`db.py`), with the core's migrations 1 to 9 (the steps both apps
+   already shared) and each app's own from 1; an old database's single number
+   maps once (I Ching's step 10 is its step 1) and is left as it was, so an
+   older build can still open the file. Speech (`tts.py`) with its cache, and
+   the AI call (`ai.py`), read the app's voices and prompts as handed in. Fixes
+   one app had went to both: a damaged list of a reading's books reads as none,
+   recording no books writes nothing, and changing a reading's sharing answers
+   with the whole reading, as reading it does.
 
 ## Rules
 

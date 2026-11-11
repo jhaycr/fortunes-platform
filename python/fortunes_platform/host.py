@@ -1,8 +1,9 @@
 """The app this code is running in, handed in once at startup.
 
-The shared modules (sign-in, users, sessions, config, limits, encryption) are
-the same in every Little Fortunes app but for a few names: the app's own name,
-the prefix of its environment variables, its data directory, and its database.
+The shared modules (sign-in, users, sessions, config, limits, encryption, the
+journal) are the same in every Little Fortunes app but for a few names and one
+shape: the app's own name, the prefix of its environment variables, its data
+directory, and its readings' own columns.
 The app hands those in with `configure`, from its package's `__init__.py`, so
 they are set before any request is served:
 
@@ -13,12 +14,12 @@ they are set before any request is served:
         name="Little Fortunes · I Ching",
         env_prefix="ICHING_",        # ICHING_SECRET_KEY, ICHING_AUTH_MODE, ...
         data_dir=paths.data_dir,     # called on each use, so tests can move it
-        db=lambda: importlib.import_module("iching.db"),
+        journal=lambda: importlib.import_module("iching.db").JOURNAL,
     ))
 
 Nothing here reads the environment or the database when it is imported. Every
 module asks at the moment it needs a value, so an app's tests can change the
-environment, and `configure` can run before the app's database module exists.
+environment, and `configure` can run before the app's own modules exist.
 """
 
 from __future__ import annotations
@@ -26,8 +27,10 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from types import ModuleType
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from fortunes_platform.db import Journal
 
 
 @dataclass(frozen=True)
@@ -49,12 +52,17 @@ class Host:
     """Returns the directory the app keeps its data in (its config.yaml, its
     secret key, its database)."""
 
-    db: Callable[[], ModuleType]
-    """Returns the app's database module. The shared modules call its
-    `connect()` and `get_setting()`, and the limits module its spending
-    ledger: `reading_charge_exists`, `readings_charged`, `try_charge_reading`,
-    `llm_tokens_since` and `tts_bytes_since`; users read
-    `display_name_overrides`."""
+    journal: Callable[[], "Journal"]
+    """Returns the app's own part of the journal (`fortunes_platform.db.Journal`):
+    its readings' columns, its share lists, its own migrations."""
+
+    prompts: Callable[[], dict] = dict
+    """Returns the app's prompts file. The AI call reads its `personas`,
+    `default_persona` and `max_tokens.default` (see `fortunes_platform.ai`)."""
+
+    voices: Callable[[], dict] = dict
+    """Returns each reader's shipped voice for the default provider,
+    {persona: {voice, speed, instructions}} (see `fortunes_platform.tts`)."""
 
 
 _current: Host | None = None
@@ -88,15 +96,3 @@ def env_name(key: str) -> str:
 
 def data_dir() -> Path:
     return current().data_dir()
-
-
-class _Database:
-    """The app's database module, looked up on each use: `db.connect()` here
-    is the app's `connect()`, and a test's monkeypatch of the app's module
-    applies here too."""
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(current().db(), name)
-
-
-db = _Database()

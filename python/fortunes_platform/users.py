@@ -14,7 +14,7 @@ import queue
 import threading
 import time
 
-from fortunes_platform.host import db
+from fortunes_platform import db
 from fortunes_platform.auth import env_is_admin, fallback_user
 
 # Refresh last_seen at most this often, so ordinary browsing doesn't write on

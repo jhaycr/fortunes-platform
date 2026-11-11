@@ -16,7 +16,7 @@ import secrets
 import time
 
 from fortunes_platform import crypto
-from fortunes_platform.host import db
+from fortunes_platform import db
 
 DEFAULT_SESSION_DAYS = 90
 # Refresh the sliding expiry only when the stored last_seen is older than

@@ -17,7 +17,7 @@ apps that use it each have their own README and container image.
 
 | Path | What it is |
 |---|---|
-| `python/fortunes_platform/` | The server half (package `fortunes-platform`): sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the voice providers, and Server-Sent Events framing |
+| `python/fortunes_platform/` | The server half (package `fortunes-platform`): the journal database and its migrations, sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the AI call, speech with its voice providers and audio cache, and Server-Sent Events framing |
 | `styles/suite.css` | The suite's look: colour tokens, page defaults, and the small classes every page repeats (`.dim`, `.error`, `.danger`, `.locktag`, disabled buttons) |
 | `svelte/app.ts` | Where an app hands itself in to the web half: its name, its backend handle, a few words about its subject |
 | `svelte/types.ts` | The wire types every app shares (who is signed in, people, settings, limits, voices, usage) and `PlatformApi`, the methods the shared components call |
@@ -35,7 +35,7 @@ Server (`backend/pyproject.toml`):
 
 ```toml
 dependencies = [
-    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.4.0.tar.gz#subdirectory=python",
+    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.5.0.tar.gz#subdirectory=python",
 ]
 
 [tool.hatch.metadata]
@@ -46,14 +46,15 @@ Web pages (`frontend/package.json`):
 
 ```json
 "devDependencies": {
-	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.4.0.tar.gz"
+	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.5.0.tar.gz"
 }
 ```
 
 The server modules need to know which app they are serving: its name, the
-prefix of its environment variables, its data directory and its database. The
-app hands those in once, from its package's `__init__.py`, before anything
-else runs (see `fortunes_platform/host.py`):
+prefix of its environment variables, its data directory, its readings' own
+columns, its prompts and its readers' voices. The app hands those in once,
+from its package's `__init__.py`, before anything else runs (see
+`fortunes_platform/host.py`):
 
 ```python
 from fortunes_platform import host
@@ -63,13 +64,24 @@ host.configure(host.Host(
     name="My App",
     env_prefix="MYAPP_",           # MYAPP_SECRET_KEY, MYAPP_AUTH_MODE, ...
     data_dir=lambda: paths.data_dir(),
-    db=lambda: importlib.import_module("myapp.db"),
+    journal=lambda: importlib.import_module("myapp.db").JOURNAL,
+    prompts=lambda: importlib.import_module("myapp.interpret").PROMPTS,
+    voices=lambda: importlib.import_module("myapp.tts").VOICES,
 ))
 ```
 
-The app's database module provides the tables the shared code reads (users,
-sessions, settings and the spending ledger); see `Host.db` for the functions
-called.
+The journal (`fortunes_platform/db.py`) is one SQLite file with the readings,
+their sharing and interpretations, users, sessions, settings and the usage
+ledger. The app's own part is a `Journal`: how its readings' columns read
+back, what a share list shows, and its own migrations, numbered apart from the
+core's. An app's db module re-exports the journal and adds its own:
+
+```python
+from fortunes_platform.db import *  # noqa: F401,F403
+from fortunes_platform.db import Journal, _reading_dict, connect
+
+JOURNAL = Journal(reading=..., pieces=..., share_columns="deck, spread")
+```
 
 The app's global stylesheet starts with the suite's, and adds only what is
 its own after it:

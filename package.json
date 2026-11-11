@@ -1,6 +1,6 @@
 {
 	"name": "fortunes-platform",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"description": "The code the Little Fortunes apps share: the suite stylesheet, Svelte components and Playwright helpers (the Python half is under python/)",
 	"license": "MIT",
 	"type": "module",

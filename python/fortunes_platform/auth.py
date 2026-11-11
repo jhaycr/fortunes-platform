@@ -80,7 +80,7 @@ LEGACY, HEADER, OIDC = "legacy", "header", "oidc"
 def mode() -> str:
     """Resolved auth mode. Config file wins; DB setting next; env last; an
     absent/unknown value means legacy (full back-compat)."""
-    from fortunes_platform.host import db
+    from fortunes_platform import db
 
     m = cfgfile.get("auth", "mode")
     if m is None:
@@ -101,7 +101,7 @@ def auto_provision() -> bool:
     real gate; turn off to require pre-created users)."""
     v = cfgfile.get("auth", "auto_provision")
     if v is None:
-        from fortunes_platform.host import db
+        from fortunes_platform import db
 
         v = db.get_setting("auth_auto_provision") or None
     if v is None:
