@@ -32,8 +32,12 @@ import type { PlatformApi } from './types';
 export type LoaderKind = 'twinkle' | 'breath' | 'card';
 
 export interface AppConfig {
-	/** Lower-case identifier: browser storage keys, file names. */
+	/** Lower-case identifier: names files and the setup log line. */
 	id: string;
+	/** Prefix of the app's browser storage (its key, its demo's journal);
+	 * `id` if not given. Kept as it was first shipped, so visitors keep what
+	 * they saved ("tarotarium" for Tarotarium). */
+	storage?: string;
 	/** The display name, as the header shows it ("Little Fortunes · I Ching"). */
 	name: string;
 	/** The name in a sentence ("I Ching", "Tarotarium"). */
@@ -73,6 +77,12 @@ export function configure(config: AppConfig): void {
 /** The loading animation the app chose; twinkle if none (or not yet configured). */
 export function loaderKind(): LoaderKind {
 	return current?.loader ?? 'twinkle';
+}
+
+/** The prefix of the app's browser storage. */
+export function storagePrefix(): string {
+	const a = app();
+	return a.storage ?? a.id;
 }
 
 /** The app, as handed in. Throws if `configure` has not run. */

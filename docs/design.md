@@ -89,7 +89,12 @@ Each step leaves both apps' full test suites passing, and is its own release.
    with its You panel, the account page and saved preferences. Fixes one app
    had went to both: an unknown /api/ path is a 404, never the app's page;
    on a phone the account sits beside the name instead of on a row of its
-   own.
+   own. *Done in v0.7.0:* the browser-local journal behind the public demo
+   (`local.ts` and `localjournal.ts`, with the visitor's key in `keystore.ts`
+   and the AI call from the browser in `llm.ts`), the server build's shared
+   API methods (`http.ts`), and the key card. What stays in each app is its
+   subject: its own reading fields, its readers' voices, its prompts, and the
+   pages built around them.
 
 ## Rules
 
