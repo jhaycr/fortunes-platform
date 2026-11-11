@@ -1,6 +1,6 @@
 [project]
 name = "fortunes-platform"
-version = "0.5.0"
+version = "0.6.0"
 description = "The server code the Little Fortunes apps share"
 license = "MIT"
 requires-python = ">=3.11"

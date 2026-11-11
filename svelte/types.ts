@@ -29,6 +29,37 @@ export interface Shareable {
 	shared_with: string[];
 }
 
+/** A reading you have shared, on the account page. Each app adds the
+ * columns that name a reading with no question (a cast's lines, a spread). */
+export interface GrantedShareBase {
+	id: number;
+	question: string | null;
+	created_at: number;
+	visibility: Visibility;
+	shared_with: string[];
+}
+
+/** A reading someone shared with you, on the account page. */
+export interface ReceivedShareBase {
+	id: number;
+	owner: string;
+	question: string | null;
+	created_at: number;
+	granted_at: number;
+}
+
+export interface AccountBase<G extends GrantedShareBase = GrantedShareBase, R extends ReceivedShareBase = ReceivedShareBase> {
+	user: string;
+	display_name: string;
+	authenticated: boolean;
+	is_admin: boolean;
+	reading_count: number;
+	shares_granted: G[];
+	shares_received: R[];
+	/** Display names of everyone the page mentions, keyed by username. */
+	names?: Record<string, string>;
+}
+
 /** Fields listed in `managed` come from the deployment's config file and
  * cannot be written from the UI. */
 export interface LlmSettings {
@@ -251,7 +282,12 @@ export interface CapabilitiesBase {
 /** The methods of an app's backend handle that the shared components call. */
 export interface PlatformApi {
 	capabilities: CapabilitiesBase;
+	me(): Promise<Me>;
+	setMySettings(s: Record<string, unknown>): Promise<unknown>;
 	users(): Promise<Person[]>;
+	account(): Promise<AccountBase>;
+	exportMyData(): Promise<{ blob: Blob; filename: string }>;
+	deleteMe(confirm: string): Promise<Record<string, unknown>>;
 	setSharing(id: number, visibility: Visibility, grantees?: string[]): Promise<Shareable>;
 	patchMe(p: { display_name?: string }): Promise<{ display_name: string }>;
 	setupState(): Promise<{ required: boolean; user: string; is_admin: boolean }>;

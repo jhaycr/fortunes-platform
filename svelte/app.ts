@@ -59,6 +59,9 @@ export interface AppConfig {
 	};
 }
 
+/** The suite's own page: the first half of every app's name links there. */
+export const SUITE_URL = 'https://littlefortunes.app';
+
 let current: AppConfig | null = null;
 
 /** Hand in the app. Called once, before the first page renders; a second

@@ -9,15 +9,18 @@ import LimitsCard from './LimitsCard.svelte';
 import PeoplePanel from './PeoplePanel.svelte';
 import SignInSetup from './SignInSetup.svelte';
 import VisibilitySelect from './VisibilitySelect.svelte';
+import Shell from './Shell.svelte';
+import { createRawSnippet } from 'svelte';
+import { api as testApi } from './testapp';
+import { persisted, persistedList, prefsLoaded, queuePref, syncPrefs } from './prefs.svelte';
 
 afterEach(cleanup);
 
 describe('configure', () => {
-	test('app() before configure says what is missing', async () => {
-		vi.resetModules();
-		const fresh = await import('./app');
-		expect(() => fresh.app()).toThrow(/configure\(\) has not been called/);
-		expect(fresh.loaderKind()).toBe('twinkle');
+	test('app() before configure says what is missing', () => {
+		configure(null as never);
+		expect(() => app()).toThrow(/configure\(\) has not been called/);
+		expect(loaderKind()).toBe('twinkle');
 	});
 
 	test('app() returns what was handed in, and a second call replaces it', () => {
@@ -91,4 +94,81 @@ test('sharing saves through the app api and names the app when nobody else is th
 	await fireEvent.click(screen.getByLabelText('Everyone'));
 	await fireEvent.click(screen.getByRole('button', { name: /save/i }));
 	await vi.waitFor(() => expect(calls.find((c) => c.method === 'setSharing')?.args).toEqual([1, 'everyone', []]));
+});
+
+describe('the shell', () => {
+	const links = [
+		{ href: '/', label: 'Shuffle' },
+		{ href: '/journal', label: 'Journal' }
+	];
+
+	test('the suite half of the name goes to the suite, the app half home', async () => {
+		useTestApp();
+		const mark = createRawSnippet(() => ({ render: () => '<i>✦</i>' }));
+		const children = createRawSnippet(() => ({ render: () => '<p>page</p>' }));
+		const seen: string[] = [];
+		render(Shell, { links, path: '/journal/3', favicon: '', mark, children, onme: (m) => seen.push(m.user) });
+		expect(screen.getByRole('link', { name: /Little Fortunes/ }).getAttribute('href')).toBe('https://littlefortunes.app');
+		expect(screen.getByRole('link', { name: 'Test App' }).getAttribute('href')).toBe('/');
+		expect(screen.getByRole('link', { name: 'Journal' }).classList.contains('active')).toBe(true);
+		expect(screen.getByRole('link', { name: 'Shuffle' }).classList.contains('active')).toBe(false);
+		await vi.waitFor(() => expect(seen).toEqual(['sam']));
+		expect(await screen.findByText('v1.2.3')).toBeTruthy();
+		expect(screen.getByText('page')).toBeTruthy();
+	});
+
+	test('the public demo says where readings are kept', async () => {
+		useTestApp({ api: { ...testApi, capabilities: { ...testApi.capabilities, localData: true } } });
+		const snip = createRawSnippet(() => ({ render: () => '<span></span>' }));
+		render(Shell, { links, path: '/', favicon: '', mark: snip, children: snip });
+		expect(screen.getByText(/Your readings stay in this browser/)).toBeTruthy();
+	});
+});
+
+describe('saved preferences', () => {
+	test('the server wins, a burst of changes is one save, and a new account imports this device', async () => {
+		useTestApp();
+		localStorage.setItem('testapp.reader', 'imp');
+		const reader = persisted('testapp.reader', 'persona', 'sage');
+		const favs = persistedList('testapp.favs', 'favs');
+		expect(reader.value).toBe('imp');
+		expect(prefsLoaded()).toBe(false);
+
+		syncPrefs({ auto_read_audio: false, persona: 'sage', has_profile: true, favs: ['a'] } as never);
+		expect(reader.value).toBe('sage');
+		expect(favs.value).toEqual(['a']);
+		expect(localStorage.getItem('testapp.reader')).toBe('sage');
+		expect(prefsLoaded()).toBe(true);
+
+		vi.useFakeTimers();
+		reader.value = 'imp';
+		favs.value = ['a', 'b'];
+		queuePref('extras', { one: true });
+		queuePref('extras', { two: false });
+		await vi.advanceTimersByTimeAsync(600);
+		vi.useRealTimers();
+		const saves = calls.filter((c) => c.method === 'setMySettings');
+		expect(saves).toHaveLength(1);
+		expect(saves[0].args[0]).toEqual({ persona: 'imp', favs: ['a', 'b'], extras: { one: true, two: false } });
+
+		calls.length = 0;
+		syncPrefs({ auto_read_audio: false, persona: null, has_profile: false });
+		expect(calls.find((c) => c.method === 'setMySettings')?.args[0]).toMatchObject({ persona: 'imp', favs: ['a', 'b'] });
+	});
+});
+
+test('the account page names shares the app way and carries its own section', async () => {
+	useTestApp();
+	const { default: AccountPage } = await import('./AccountPage.svelte');
+	const own = createRawSnippet(() => ({ render: () => '<section><h2>Decks you published</h2></section>' }));
+	render(AccountPage, {
+		title: (s: { question: string | null; spread?: string }) => s.question ?? `A ${s.spread} spread`,
+		own,
+		erases: 'Erases it all.'
+	});
+	expect(await screen.findByText('A three spread')).toBeTruthy();
+	expect(screen.getByText('Why?')).toBeTruthy();
+	expect(screen.getByText(/from Robin/)).toBeTruthy();
+	expect(screen.getByText('Decks you published')).toBeTruthy();
+	expect(screen.getByText(/Erases it all\. Signing in again/)).toBeTruthy();
 });

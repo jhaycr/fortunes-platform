@@ -82,7 +82,14 @@ Each step leaves both apps' full test suites passing, and is its own release.
    the AI call (`ai.py`), read the app's voices and prompts as handed in. Fixes
    one app had went to both: a damaged list of a reading's books reads as none,
    recording no books writes nothing, and changing a reading's sharing answers
-   with the whole reading, as reading it does.
+   with the whole reading, as reading it does. *Done in v0.6.0:* the routes
+   both apps serve (`api.py`, with their middleware and the static pages'
+   fallback; the app hands in its own settings, its people tools and the last
+   shaping of a reading), and on the web the page shell, the settings page
+   with its You panel, the account page and saved preferences. Fixes one app
+   had went to both: an unknown /api/ path is a 404, never the app's page;
+   on a phone the account sits beside the name instead of on a row of its
+   own.
 
 ## Rules
 

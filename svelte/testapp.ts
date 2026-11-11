@@ -14,8 +14,35 @@ function stub<T>(method: string, value: T) {
 
 const managed = { managed: [], config_file: null, config_error: null };
 
+export const me = {
+	user: 'sam',
+	display_name: 'Sam',
+	interpretation: false,
+	tts: false,
+	settings: { auto_read_audio: false, persona: null, has_profile: true },
+	limits: { enabled: false },
+	is_admin: true,
+	authenticated: true,
+	logout_url: '/auth/logout',
+	version: '1.2.3'
+};
+
 export const api: PlatformApi = {
 	capabilities: { sharing: true, tts: true, localKey: false, localData: false },
+	me: stub('me', me),
+	account: stub('account', {
+		user: 'sam',
+		display_name: 'Sam',
+		authenticated: true,
+		is_admin: true,
+		reading_count: 2,
+		shares_granted: [{ id: 4, question: null, created_at: 0, visibility: 'specific' as const, shared_with: ['robin'], spread: 'three' }],
+		shares_received: [{ id: 9, owner: 'robin', question: 'Why?', created_at: 0, granted_at: 0 }],
+		names: { robin: 'Robin' }
+	}),
+	exportMyData: stub('exportMyData', { blob: new Blob(['x']), filename: 'testapp-export.zip' }),
+	deleteMe: stub('deleteMe', {}),
+	setMySettings: stub('setMySettings', {}),
 	users: stub('users', [{ username: 'robin', display_name: 'Robin' }]),
 	setSharing: stub('setSharing', { id: 1, owner: 'sam', visibility: 'everyone' as const, shared_with: [] }),
 	patchMe: stub('patchMe', { display_name: 'Sam' }),

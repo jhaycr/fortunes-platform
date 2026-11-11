@@ -17,11 +17,12 @@ apps that use it each have their own README and container image.
 
 | Path | What it is |
 |---|---|
-| `python/fortunes_platform/` | The server half (package `fortunes-platform`): the journal database and its migrations, sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the AI call, speech with its voice providers and audio cache, and Server-Sent Events framing |
+| `python/fortunes_platform/` | The server half (package `fortunes-platform`): the journal database and its migrations, sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the AI call, speech with its voice providers and audio cache, the HTTP routes every app serves (`api.py`), and Server-Sent Events framing |
 | `styles/suite.css` | The suite's look: colour tokens, page defaults, and the small classes every page repeats (`.dim`, `.error`, `.danger`, `.locktag`, disabled buttons) |
 | `svelte/app.ts` | Where an app hands itself in to the web half: its name, its backend handle, a few words about its subject |
 | `svelte/types.ts` | The wire types every app shares (who is signed in, people, settings, limits, voices, usage) and `PlatformApi`, the methods the shared components call |
-| `svelte/*.svelte` | Shared components: the audio button and its loader, the waiting indicator, the sharing control, the first-admin page, and the settings cards (AI, written interpretations, voices, limits, usage, people) |
+| `svelte/*.svelte` | Shared pages and components: the page shell, the settings page with its You panel, the account page, the first-admin page; the audio button and its loader, the waiting indicator, the sharing control, and the settings cards (AI, written interpretations, voices, limits, usage, people) |
+| `svelte/prefs.svelte.ts` | Saved preferences: kept on the device, saved to the account, synced once per visit |
 | `testing/viewport.ts` | Playwright checks for phone and desktop layouts: on screen, reachable by finger, nothing poking out sideways |
 | `testing/static-server.mjs` | A stand-in static host for testing a single-page app's static build |
 | `docs/design.md` | Why this exists, what belongs here, and the order things move in |
@@ -35,7 +36,7 @@ Server (`backend/pyproject.toml`):
 
 ```toml
 dependencies = [
-    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.5.0.tar.gz#subdirectory=python",
+    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.6.0.tar.gz#subdirectory=python",
 ]
 
 [tool.hatch.metadata]
@@ -46,7 +47,7 @@ Web pages (`frontend/package.json`):
 
 ```json
 "devDependencies": {
-	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.5.0.tar.gz"
+	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.6.0.tar.gz"
 }
 ```
 
@@ -83,6 +84,25 @@ from fortunes_platform.db import Journal, _reading_dict, connect
 JOURNAL = Journal(reading=..., pieces=..., share_columns="deck, spread")
 ```
 
+The HTTP routes every app serves (`fortunes_platform/api.py`: sign-in and
+first-admin setup, who is signed in, people, the AI, voice and limit
+settings, usage, the journal's list with sharing and deletion, speech) come
+with their middleware from `create_app`. The app adds its own routes, then
+serves its built pages last:
+
+```python
+app = api.create_app(my_settings=get_my_settings, people=reassign)
+
+@app.get("/api/cards")
+def cards(): ...
+
+api.serve_frontend(app, Path(__file__).parents[3] / "frontend" / "build")
+```
+
+App code and its tests reach the AI call through `fortunes_platform.ai`
+(`ai.config()`, `ai.interpret_stream(...)`), so a test's stand-in for it
+reaches the shared routes too.
+
 The app's global stylesheet starts with the suite's, and adds only what is
 its own after it:
 
@@ -107,6 +127,15 @@ configure({
 	api,
 	words: { withoutAi: 'Shuffling and the journal', practice: 'shuffling' }
 });
+```
+
+The root layout renders the shared shell around the app's pages:
+
+```svelte
+<Shell {links} {favicon} path={page.url.pathname} onme={(m) => syncPrefs(m.settings)}>
+	{#snippet mark()}<Mark />{/snippet}
+	{@render children()}
+</Shell>
 ```
 
 ```ts
