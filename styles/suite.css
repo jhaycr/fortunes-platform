@@ -1,0 +1,162 @@
+/* The Little Fortunes look, shared by every app in the suite: the colour
+   tokens, page defaults, and the small classes every page repeats.
+
+   An app imports it first, from its own global stylesheet, and adds only what
+   is its own after it:
+
+       @import 'fortunes-platform/styles.css';
+
+   A page's own (scoped) rule for one of these classes still wins, so a page
+   can add to one (a margin, a smaller size) without restating the colour. */
+
+:root {
+	--bg: #12101c;
+	--bg-raised: #1c1930;
+	--bg-card: #221e3a;
+	--border: #38325c;
+	--text: #e8e4f5;
+	--text-dim: #a49dc4;
+	--gold: #d4af6a;
+	--gold-bright: #eccd8f;
+	--accent: #8d7bd4;
+	--danger: #d47a7a;
+	--radius: 12px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+body {
+	background-image: radial-gradient(ellipse 80% 50% at 50% -10%, #2b2450 0%, transparent 60%);
+	background-repeat: no-repeat;
+	min-height: 100dvh;
+}
+
+h1,
+h2,
+h3 {
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	color: var(--gold-bright);
+	margin: 0 0 0.5rem;
+}
+
+a {
+	color: var(--accent);
+	text-decoration: none;
+}
+
+button {
+	font: inherit;
+	cursor: pointer;
+	border: 1px solid var(--border);
+	background: var(--bg-raised);
+	color: var(--text);
+	border-radius: var(--radius);
+	padding: 0.6rem 1.2rem;
+	transition: border-color 0.15s, background 0.15s;
+}
+
+button:hover {
+	border-color: var(--gold);
+}
+
+button.primary {
+	background: linear-gradient(160deg, #443a75, #2f2857);
+	border-color: var(--accent);
+	color: var(--gold-bright);
+	font-size: 1.05rem;
+	padding: 0.8rem 2rem;
+}
+
+button.primary:hover {
+	border-color: var(--gold);
+}
+
+input[type='text'],
+input[type='password'],
+input[type='number'],
+textarea,
+select {
+	font: inherit;
+	background: var(--bg-raised);
+	color: var(--text);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 0.6rem 0.9rem;
+	width: 100%;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+/* Text that matters less: hints, counts, dates, the line under a heading. */
+.dim {
+	color: var(--text-dim);
+}
+
+/* Something went wrong, said in words. */
+.error {
+	color: var(--danger);
+}
+
+/* A button that deletes or can't be undone. It stays red when pointed at. */
+.danger,
+button.danger:hover {
+	color: var(--danger);
+	border-color: var(--danger);
+}
+
+/* A small pill after a heading or label, saying what the thing needs: a
+   self-hosted server, an AI key. */
+.locktag {
+	margin-left: 0.5rem;
+	padding: 0.05rem 0.4rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	font-size: 0.7rem;
+	font-weight: normal;
+	color: var(--text-dim);
+	vertical-align: middle;
+}
+
+/* A button that won't respond has to look it, danger buttons included. One
+   showing the waiting stars (`.over`) is working, not refusing, so it keeps
+   its full colour. These come last so that they win. */
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+button:disabled:hover {
+	border-color: var(--border);
+}
+
+button.primary:disabled:hover {
+	border-color: var(--accent);
+}
+
+button.danger:disabled:hover {
+	border-color: var(--danger);
+}
+
+button:disabled:has(.over) {
+	opacity: 1;
+	cursor: progress;
+}

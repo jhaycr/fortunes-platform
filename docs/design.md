@@ -56,7 +56,12 @@ Each step leaves both apps' full test suites passing, and is its own release.
    database core (step 5). The web pages on that row move with step 4.
 3. **Shared styles.** The colour tokens and the small classes every page
    repeats (dim text, errors, danger buttons, the Self-hosted tag, disabled
-   buttons).
+   buttons). *Done in v0.3.0:* `styles/suite.css`, which
+   each app imports first from its own global stylesheet. A page's scoped
+   rule for one of these classes now adds to it (a margin, a size) instead of
+   restating it. The merge brought the disabled-button look, which only I Ching
+   had, to Tarotarium, and the dim text the account pages asked for but never
+   got.
 4. **Components that differ only by name**, once both apps read their name
    from one place.
 5. **What has drifted.** Merged one piece at a time, and every fix that only

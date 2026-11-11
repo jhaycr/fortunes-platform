@@ -18,6 +18,7 @@ apps that use it each have their own README and container image.
 | Path | What it is |
 |---|---|
 | `python/fortunes_platform/` | The server half (package `fortunes-platform`): sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the voice providers, and Server-Sent Events framing |
+| `styles/suite.css` | The suite's look: colour tokens, page defaults, and the small classes every page repeats (`.dim`, `.error`, `.danger`, `.locktag`, disabled buttons) |
 | `svelte/` | Components and types for the settings pages |
 | `testing/viewport.ts` | Playwright checks for phone and desktop layouts: on screen, reachable by finger, nothing poking out sideways |
 | `testing/static-server.mjs` | A stand-in static host for testing a single-page app's static build |
@@ -32,7 +33,7 @@ Server (`backend/pyproject.toml`):
 
 ```toml
 dependencies = [
-    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.2.0.tar.gz#subdirectory=python",
+    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.3.0.tar.gz#subdirectory=python",
 ]
 
 [tool.hatch.metadata]
@@ -43,7 +44,7 @@ Web pages (`frontend/package.json`):
 
 ```json
 "devDependencies": {
-	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.2.0.tar.gz"
+	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.3.0.tar.gz"
 }
 ```
 
@@ -67,6 +68,13 @@ host.configure(host.Host(
 The app's database module provides the tables the shared code reads (users,
 sessions, settings and the spending ledger); see `Host.db` for the functions
 called.
+
+The app's global stylesheet starts with the suite's, and adds only what is
+its own after it:
+
+```css
+@import 'fortunes-platform/styles.css';
+```
 
 ```ts
 import SettingCard from 'fortunes-platform/SettingCard.svelte';

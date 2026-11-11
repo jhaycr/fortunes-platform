@@ -40,8 +40,8 @@ def test_mode_reads_file_then_database_then_environment(settings, monkeypatch, t
 
 def test_header_trusted_refuses_a_non_proxy_peer(monkeypatch):
     monkeypatch.setattr(auth, "mode", lambda: auth.HEADER)
-    monkeypatch.setattr(auth, "_trusted_header_cfg", lambda: {"enabled": True, "proxies": ["10.10.0.0/24"]})
-    assert auth.header_trusted(_request("10.10.0.5")) is True
+    monkeypatch.setattr(auth, "_trusted_header_cfg", lambda: {"enabled": True, "proxies": ["10.99.0.0/24"]})
+    assert auth.header_trusted(_request("10.99.0.5")) is True
     assert auth.header_trusted(_request("203.0.113.9")) is False
 
 
