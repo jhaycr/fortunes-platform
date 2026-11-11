@@ -18,9 +18,8 @@ def client(app, tmp_path, monkeypatch):
     site.mkdir()
     (site / "index.html").write_text("<p>the app</p>")
     people = types.SimpleNamespace(
-        reassign_user_data=lambda src, dst: {"from": src, "to": dst, "readings": 0, "settings": 0,
-                                             "usage_rows": 0, "deactivated": True},
-        delete_user=lambda u: {"deleted": u},
+        move_files=lambda src, dst: {"moved_for": dst},
+        erase_files=lambda u: {"erased_for": u},
     )
     a = api.create_app(
         my_settings=lambda user: {"auto_read_audio": False, "persona": None, "has_profile": False, "mine": user},
@@ -83,9 +82,11 @@ def test_the_admin_tools_use_the_app_people_module(client):
     users.touch_sync("robin")
     users.touch_sync("kit")
     r = client.post("/api/admin/users/robin/reassign", json={"to": "kit"})
-    assert r.status_code == 200 and r.json()["to"] == "kit"
+    assert r.status_code == 200 and r.json()["to"] == "kit" and r.json()["moved_for"] == "kit"
     assert client.post("/api/admin/users/robin/reassign", json={"to": "local"}).status_code == 400, \
         "the system user takes nobody's data"
+    r = client.delete("/api/admin/users/robin")
+    assert r.status_code == 200 and r.json()["erased_for"] == "robin" and users.get("robin") is None
 
 
 def test_the_app_routes_and_the_web_pages_sit_beside_the_shared_ones(client):

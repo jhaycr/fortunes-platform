@@ -17,14 +17,15 @@ apps that use it each have their own README and container image.
 
 | Path | What it is |
 |---|---|
-| `python/fortunes_platform/` | The server half (package `fortunes-platform`): the journal database and its migrations, sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the AI call, speech with its voice providers and audio cache, the HTTP routes every app serves (`api.py`), and Server-Sent Events framing |
+| `python/fortunes_platform/` | The server half (package `fortunes-platform`): the journal database and its migrations, sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the AI call, speech with its voice providers and audio cache, the HTTP routes every app serves (`api.py`), handing a person's data on or erasing an account (`people.py`), and Server-Sent Events framing |
 | `styles/suite.css` | The suite's look: colour tokens, page defaults, and the small classes every page repeats (`.dim`, `.error`, `.danger`, `.locktag`, disabled buttons) |
 | `svelte/app.ts` | Where an app hands itself in to the web half: its name, its backend handle, a few words about its subject |
 | `svelte/types.ts` | The wire types every app shares (who is signed in, people, settings, limits, voices, usage) and `PlatformApi`, the methods the shared components call |
 | `svelte/*.svelte` | Shared pages and components: the page shell, the settings page with its You panel, the account page, the first-admin page; the audio button and its loader, the waiting indicator, the sharing control, and the settings cards (AI, written interpretations, voices, limits, usage, people) |
 | `svelte/prefs.svelte.ts` | Saved preferences: kept on the device, saved to the account, synced once per visit |
 | `svelte/http.ts` | The server build's backend handle: request helpers and the methods every app's API has (`commonHttp`) |
-| `svelte/local.ts`, `localjournal.ts`, `keystore.ts`, `llm.ts` | The public demo's backend in the browser: the methods every demo has (`commonLocal`), the journal in IndexedDB, the visitor's own AI key, and the AI call from the browser |
+| `svelte/local.ts`, `localjournal.ts`, `keystore.ts`, `llm.ts`, `demovoice.ts` | The public demo's backend in the browser: the methods every demo has (`commonLocal`), the journal in IndexedDB, the visitor's own AI key, the AI call from the browser, and readings read aloud in the visitor's key (the app hands in its readers' voices) |
+| `svelte/serviceworker.ts` | The offline service worker: the app's `src/service-worker.ts` hands in what SvelteKit gives it, its cache names and any cache of its own that outlasts a release |
 | `testing/viewport.ts` | Playwright checks for phone and desktop layouts: on screen, reachable by finger, nothing poking out sideways |
 | `testing/static-server.mjs` | A stand-in static host for testing a single-page app's static build |
 | `docs/design.md` | Why this exists, what belongs here, and the order things move in |
@@ -38,7 +39,7 @@ Server (`backend/pyproject.toml`):
 
 ```toml
 dependencies = [
-    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.7.0.tar.gz#subdirectory=python",
+    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.8.0.tar.gz#subdirectory=python",
 ]
 
 [tool.hatch.metadata]
@@ -49,7 +50,7 @@ Web pages (`frontend/package.json`):
 
 ```json
 "devDependencies": {
-	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.7.0.tar.gz"
+	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.8.0.tar.gz"
 }
 ```
 
@@ -100,6 +101,11 @@ def cards(): ...
 
 api.serve_frontend(app, Path(__file__).parents[3] / "frontend" / "build")
 ```
+
+`people` is the app's module with its part of handing a person's data on
+or erasing an account: `move_files(src, dst)` and `erase_files(username)`,
+for the files it keeps per person. Each returns what it did, which is added
+to the report; the journal's part is `fortunes_platform.people`.
 
 App code and its tests reach the AI call through `fortunes_platform.ai`
 (`ai.config()`, `ai.interpret_stream(...)`), so a test's stand-in for it

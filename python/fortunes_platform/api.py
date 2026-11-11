@@ -13,8 +13,9 @@ then calls `serve_frontend` last (the static files catch every other path):
 
 The app's own parts are handed to create_app: the person's settings (part of
 /api/me), the last shaping of a reading for the API (`shape_reading`), and
-the module that reassigns and deletes a person's data (`people`, with
-`reassign_user_data(src, dst)` and `delete_user(username)`).
+the module with the app's part of handing a person's data on or erasing it
+(`people`, with `move_files(src, dst)` and `erase_files(username)`; see
+fortunes_platform.people).
 """
 
 import json
@@ -36,7 +37,8 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from fortunes_platform import ai, auth, config as cfgfile, crypto, db, host, limits, sessions, sse, tts, users
+from fortunes_platform import ai, auth, config as cfgfile, crypto, db, host, limits, people as people_core
+from fortunes_platform import sessions, sse, tts, users
 from fortunes_platform import oidc as oidc_mod, voices as voices_mod
 from fortunes_platform.auth import current_user, display_name, is_authenticated, logout_url
 from fortunes_platform.users import is_admin
@@ -304,8 +306,6 @@ def admin_reassign(username: str, req: ReassignRequest, user: User):
     """Hand every owner surface of `username` to another person and
     deactivate the source — the `local` retirement tool (auth Step 7),
     generalized to any user."""
-    reassign_mod = _hooks().people
-
     require_admin(user)
     dst = req.to.strip()
     src_row = users.get(username)
@@ -321,7 +321,7 @@ def admin_reassign(username: str, req: ReassignRequest, user: User):
     if src_row["is_admin"] and src_row["active"] and not users.other_active_admin_exists(username):
         raise HTTPException(409, "cannot deactivate the last active admin")
     # sync route: FastAPI already runs this in the threadpool
-    return reassign_mod.reassign_user_data(username, dst)
+    return people_core.reassign(username, dst, _hooks().people.move_files)
 
 
 @router.delete("/api/admin/users/{username}")
@@ -330,8 +330,6 @@ def admin_user_delete(username: str, user: User):
     "former member"; the usage ledger stays). Admins must be demoted
     first — the two-step makes deleting a privileged account deliberate;
     ordinary users delete directly (the UI confirms)."""
-    reassign_mod = _hooks().people
-
     require_admin(user)
     target = users.get(username)
     if not target:
@@ -340,7 +338,7 @@ def admin_user_delete(username: str, user: User):
         raise HTTPException(400, "you cannot delete yourself")
     if target["is_admin"]:
         raise HTTPException(409, "remove admin from this user first — admins cannot be deleted")
-    return reassign_mod.delete_user(username)
+    return people_core.erase(username, _hooks().people.erase_files)
 
 
 @router.patch("/api/admin/users/{username}")
@@ -371,13 +369,11 @@ def delete_my_data(req: DeleteMeRequest, user: User):
     """Self-service erasure — same semantics as the admin delete (readings
     cascade, ledger stays, row dropped). A later sign-in starts a fresh account
     via JIT."""
-    reassign_mod = _hooks().people
-
     if req.confirm.strip() != user:
         raise HTTPException(400, "type your username exactly to confirm")
     if is_admin(user) and not users.other_active_admin_exists(user):
         raise HTTPException(409, "you are the last admin — promote someone else first")
-    return reassign_mod.delete_user(user)
+    return people_core.erase(user, _hooks().people.erase_files)
 
 
 def _managed(section: str, *keys: str) -> list[str]:

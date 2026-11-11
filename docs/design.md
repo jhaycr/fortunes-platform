@@ -94,7 +94,18 @@ Each step leaves both apps' full test suites passing, and is its own release.
    and the AI call from the browser in `llm.ts`), the server build's shared
    API methods (`http.ts`), and the key card. What stays in each app is its
    subject: its own reading fields, its readers' voices, its prompts, and the
-   pages built around them.
+   pages built around them. *Done in v0.8.0:* what was left of the drift. The
+   journal's part of handing a person's data on or erasing an account
+   (`people.py`; the app hands in its files' part); the offline service
+   worker (`serviceworker.ts`; the app hands in its cache names, and
+   Tarotarium its card-art cache); and the demo's readings read aloud
+   (`demovoice.ts`: splitting, the request, joining the pieces, the browser's
+   cache and the price; the app hands in its voices). Cache names and cache
+   keys are the ones each app used, so what a visitor has cached stays
+   cached. Fixes one app had went to both: a price between one cent and a
+   cent and a half reads "about a cent", a price per thousand characters
+   under a dime keeps two significant figures, and a voice billed by the
+   audio token is priced per character.
 
 ## Rules
 
