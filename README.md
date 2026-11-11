@@ -19,7 +19,9 @@ apps that use it each have their own README and container image.
 |---|---|
 | `python/fortunes_platform/` | The server half (package `fortunes-platform`): sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the voice providers, and Server-Sent Events framing |
 | `styles/suite.css` | The suite's look: colour tokens, page defaults, and the small classes every page repeats (`.dim`, `.error`, `.danger`, `.locktag`, disabled buttons) |
-| `svelte/` | Components and types for the settings pages |
+| `svelte/app.ts` | Where an app hands itself in to the web half: its name, its backend handle, a few words about its subject |
+| `svelte/types.ts` | The wire types every app shares (who is signed in, people, settings, limits, voices, usage) and `PlatformApi`, the methods the shared components call |
+| `svelte/*.svelte` | Shared components: the audio button and its loader, the waiting indicator, the sharing control, the first-admin page, and the settings cards (AI, written interpretations, voices, limits, usage, people) |
 | `testing/viewport.ts` | Playwright checks for phone and desktop layouts: on screen, reachable by finger, nothing poking out sideways |
 | `testing/static-server.mjs` | A stand-in static host for testing a single-page app's static build |
 | `docs/design.md` | Why this exists, what belongs here, and the order things move in |
@@ -33,7 +35,7 @@ Server (`backend/pyproject.toml`):
 
 ```toml
 dependencies = [
-    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.3.0.tar.gz#subdirectory=python",
+    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.4.0.tar.gz#subdirectory=python",
 ]
 
 [tool.hatch.metadata]
@@ -44,7 +46,7 @@ Web pages (`frontend/package.json`):
 
 ```json
 "devDependencies": {
-	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.3.0.tar.gz"
+	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.4.0.tar.gz"
 }
 ```
 
@@ -76,16 +78,38 @@ its own after it:
 @import 'fortunes-platform/styles.css';
 ```
 
+The shared components need the same of the web half: the app's name, its
+backend handle (`api`, which has at least the methods of `PlatformApi`), and a
+few words about its subject. The app hands them in once, from a module its
+root layout imports before anything renders (see `svelte/app.ts`):
+
 ```ts
-import SettingCard from 'fortunes-platform/SettingCard.svelte';
-import type { CardStatus } from 'fortunes-platform/settings';
+// src/lib/platform.ts, imported first by src/routes/+layout.svelte
+import { configure } from 'fortunes-platform/app';
+import { api } from '$lib/api';
+
+configure({
+	id: 'myapp',
+	name: 'Little Fortunes · My App',
+	short: 'My App',
+	api,
+	words: { withoutAi: 'Shuffling and the journal', practice: 'shuffling' }
+});
+```
+
+```ts
+import AudioButton from 'fortunes-platform/AudioButton.svelte';
+import AiPanel from 'fortunes-platform/AiPanel.svelte';
+import type { Me, UserSettingsBase } from 'fortunes-platform/types';
 import { expectOnScreen } from 'fortunes-platform/testing/viewport';
 ```
 
 ## Changing it
 
 1. Make the change here, with a test.
-2. `npm test` and `pytest python/tests` (from a venv with `pip install -e "python[dev]"`).
+2. `npm test` (type check, the stylesheet and static-host tests, and the
+   component tests under `svelte/`) and `pytest python/tests` (from a venv with
+   `pip install -e "python[dev]"`).
 3. Raise the version in **both** `package.json` and `python/pyproject.toml`
    (a test fails if they differ), commit, and tag `vX.Y.Z`.
 4. In each app, point both dependencies at the new tag, reinstall, and run the

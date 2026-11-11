@@ -63,7 +63,14 @@ Each step leaves both apps' full test suites passing, and is its own release.
    had, to Tarotarium, and the dim text the account pages asked for but never
    got.
 4. **Components that differ only by name**, once both apps read their name
-   from one place.
+   from one place. *Done in v0.4.0:* the app hands its name, its backend
+   handle and a few words about its subject to `configure` (`svelte/app.ts`),
+   and the shared components read them from there: the audio button, its
+   loader and the waiting indicator; the sharing control; the first-admin
+   page; and the settings cards for AI, written interpretations, voices,
+   limits, usage and people. The wire types those use are in `svelte/types.ts`.
+   The key card (the public demo's own key) and the personal settings panel
+   have drifted with the browser-local backend, and move with it in step 5.
 5. **What has drifted.** Merged one piece at a time, and every fix that only
    one app has goes to both as part of the merge. The database core gets its
    own migration numbering, separate from each app's, with a one-time mapping
