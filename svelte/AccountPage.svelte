@@ -22,6 +22,11 @@
 		erases?: string;
 		/** The last-chance dialog's "this permanently erases ...". */
 		lastChance?: string;
+		/** In the demo, the end of "Download your data as a file: the full
+		 * journal with interpretations, ...", with its stop. */
+		localExportHas?: string;
+		/** In the demo, what "Erases ... from this browser" names. */
+		localErases?: string;
 	}
 
 	let {
@@ -31,7 +36,9 @@
 		pieces = 'its question',
 		exportHas = 'and your settings.',
 		erases = 'Permanently erases your readings and settings.',
-		lastChance = 'your journal and settings'
+		lastChance = 'your journal and settings',
+		localExportHas = 'and your settings.',
+		localErases = 'your readings, settings and any AI key'
 	}: Props = $props();
 
 	const api = app().api;
@@ -187,7 +194,7 @@
 				Everything here lives in this browser. Nothing leaves it unless you add your own AI
 				key: then a reading you ask to have interpreted ({pieces}) goes to
 				OpenRouter, and nowhere else. Download your data as a file: the full journal with
-				interpretations, and your settings.
+				interpretations, {localExportHas}
 			</p>
 		{:else}
 			<p class="dim">
@@ -204,7 +211,7 @@
 		<h3 class="dangerhead">Delete my data</h3>
 		{#if api.capabilities.localData}
 			<p class="dim">
-				Erases your readings, settings and any AI key from this browser. Type
+				Erases {localErases} from this browser. Type
 				<code>{account.user}</code> to arm the button.
 			</p>
 		{:else}

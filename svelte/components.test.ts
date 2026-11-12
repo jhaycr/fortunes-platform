@@ -123,6 +123,21 @@ describe('the shell', () => {
 		render(Shell, { links, path: '/', favicon: '', mark: snip, children: snip });
 		expect(screen.getByText(/Your readings stay in this browser/)).toBeTruthy();
 	});
+
+	test('an app that keeps more in the demo says so in its notice', async () => {
+		useTestApp({ api: { ...testApi, capabilities: { ...testApi.capabilities, localData: true } } });
+		const snip = createRawSnippet(() => ({ render: () => '<span></span>' }));
+		render(Shell, { links, path: '/', favicon: '', mark: snip, children: snip, demoNote: 'Public demo. Your readings and decks stay in this browser.' });
+		expect(screen.getByText('Public demo. Your readings and decks stay in this browser.')).toBeTruthy();
+		expect(screen.queryByText('Public demo. Your readings stay in this browser.')).toBeNull();
+	});
+
+	test('a server shows no demo notice', async () => {
+		useTestApp();
+		const snip = createRawSnippet(() => ({ render: () => '<span></span>' }));
+		render(Shell, { links, path: '/', favicon: '', mark: snip, children: snip, demoNote: 'Public demo. Kept here.' });
+		expect(screen.queryByText(/Public demo/)).toBeNull();
+	});
 });
 
 describe('saved preferences', () => {
@@ -171,4 +186,21 @@ test('the account page names shares the app way and carries its own section', as
 	expect(screen.getByText(/from Robin/)).toBeTruthy();
 	expect(screen.getByText('Decks you published')).toBeTruthy();
 	expect(screen.getByText(/Erases it all\. Signing in again/)).toBeTruthy();
+});
+
+test('the demo account page names what this browser keeps and what deleting erases', async () => {
+	useTestApp({ api: { ...testApi, capabilities: { ...testApi.capabilities, localData: true } } });
+	const { default: AccountPage } = await import('./AccountPage.svelte');
+	render(AccountPage, { title: (s: { question: string | null }) => s.question ?? 'A reading' });
+	expect(await screen.findByText(/Erases your readings, settings and any AI key from this browser\./)).toBeTruthy();
+	expect(screen.getByText(/with interpretations, and your settings\./)).toBeTruthy();
+	cleanup();
+
+	render(AccountPage, {
+		title: (s: { question: string | null }) => s.question ?? 'A reading',
+		localErases: 'your readings, decks, settings and any AI key',
+		localExportHas: 'and your settings. Each deck of your own exports from its page.'
+	});
+	expect(await screen.findByText(/Erases your readings, decks, settings and any AI key from this browser\./)).toBeTruthy();
+	expect(screen.getByText(/and your settings\. Each deck of your own exports from its page\./)).toBeTruthy();
 });

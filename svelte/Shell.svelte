@@ -18,6 +18,7 @@
 		favicon,
 		mark,
 		accountTitle = 'Your account: identity, shares, your data',
+		demoNote = 'Public demo. Your readings stay in this browser.',
 		onme,
 		children
 	}: {
@@ -30,6 +31,8 @@
 		mark: Snippet;
 		/** The account link's tooltip. */
 		accountTitle?: string;
+		/** The public demo's notice: what it keeps, and where. */
+		demoNote?: string;
 		/** Called once with who is signed in (an app syncs its saved prefs here). */
 		onme?: (m: Me) => void;
 		children: Snippet;
@@ -106,7 +109,7 @@
 		{/if}
 	</header>
 	{#if api.capabilities.localData}
-		<p class="demo">Public demo. Your readings stay in this browser.</p>
+		<p class="demo">{demoNote}</p>
 	{/if}
 	<main>
 		{@render children()}
