@@ -1,6 +1,6 @@
 {
 	"name": "fortunes-platform",
-	"version": "0.9.0",
+	"version": "0.10.0",
 	"description": "The code the Little Fortunes apps share: the suite stylesheet, Svelte components and Playwright helpers (the Python half is under python/)",
 	"license": "MIT",
 	"type": "module",
@@ -25,13 +25,17 @@
 			"types": "./testing/viewport.d.ts",
 			"default": "./testing/viewport.js"
 		},
+		"./testing/pdf": {
+			"types": "./testing/pdf.d.ts",
+			"default": "./testing/pdf.js"
+		},
 		"./testing/static-server.mjs": "./testing/static-server.mjs",
 		"./package.json": "./package.json"
 	},
 	"scripts": {
 		"build": "tsc -p testing/tsconfig.json",
 		"check": "svelte-check --tsconfig ./tsconfig.json --threshold warning",
-		"test": "npm run check && npm run build && git diff --exit-code -- testing/viewport.js testing/viewport.d.ts && node --test testing/*.test.mjs styles/*.test.mjs && vitest run"
+		"test": "npm run check && npm run build && git diff --exit-code -- testing/viewport.js testing/viewport.d.ts testing/pdf.js testing/pdf.d.ts && node --test testing/*.test.mjs styles/*.test.mjs && vitest run"
 	},
 	"peerDependencies": {
 		"@playwright/test": "^1.64.0",

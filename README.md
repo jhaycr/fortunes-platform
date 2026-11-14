@@ -17,7 +17,7 @@ apps that use it each have their own README and container image.
 
 | Path | What it is |
 |---|---|
-| `python/fortunes_platform/` | The server half (package `fortunes-platform`): the journal database and its migrations, sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the AI call, speech with its voice providers and audio cache, the HTTP routes every app serves (`api.py`), handing a person's data on or erasing an account (`people.py`), and Server-Sent Events framing |
+| `python/fortunes_platform/` | The server half (package `fortunes-platform`): the journal database and its migrations, sign-in (proxy header and OIDC), users, sessions, encryption at rest, the YAML config file, spending limits, the AI call, speech with its voice providers and audio cache, the HTTP routes every app serves (`api.py`), handing a person's data on or erasing an account (`people.py`), a library of books people upload (`books.py`: each person's own and the shared ones, import jobs, taking an upload) and reading an uploaded PDF (`pdfimport.py`, its text or a scan by a vision model, in a child process that limits itself, `pdfworker.py`), and Server-Sent Events framing |
 | `styles/suite.css` | The suite's look: colour tokens, page defaults, and the small classes every page repeats (`.dim`, `.error`, `.danger`, `.locktag`, disabled buttons) |
 | `svelte/app.ts` | Where an app hands itself in to the web half: its name, its backend handle, a few words about its subject |
 | `svelte/types.ts` | The wire types every app shares (who is signed in, people, settings, limits, voices, usage) and `PlatformApi`, the methods the shared components call |
@@ -28,6 +28,7 @@ apps that use it each have their own README and container image.
 | `svelte/serviceworker.ts` | The offline service worker: the app's `src/service-worker.ts` hands in what SvelteKit gives it, its cache names and any cache of its own that outlasts a release |
 | `testing/viewport.ts` | Playwright checks for phone and desktop layouts: on screen, reachable by finger, nothing poking out sideways |
 | `testing/static-server.mjs` | A stand-in static host for testing a single-page app's static build |
+| `testing/pdf.ts`, `python/fortunes_platform/testing/pdfgen.py` | Small PDFs written by hand for a library's tests, in the browser and on the server: a text layer, an outline, or pages that are only pictures |
 | `docs/design.md` | Why this exists, what belongs here, and the order things move in |
 
 ## Using it from an app
@@ -39,7 +40,7 @@ Server (`backend/pyproject.toml`):
 
 ```toml
 dependencies = [
-    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.9.0.tar.gz#subdirectory=python",
+    "fortunes-platform @ https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.10.0.tar.gz#subdirectory=python",
 ]
 
 [tool.hatch.metadata]
@@ -50,7 +51,7 @@ Web pages (`frontend/package.json`):
 
 ```json
 "devDependencies": {
-	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.9.0.tar.gz"
+	"fortunes-platform": "https://github.com/jhaycr/fortunes-platform/archive/refs/tags/v0.10.0.tar.gz"
 }
 ```
 
@@ -106,6 +107,26 @@ api.serve_frontend(app, Path(__file__).parents[3] / "frontend" / "build")
 or erasing an account: `move_files(src, dst)` and `erase_files(username)`,
 for the files it keeps per person. Each returns what it did, which is added
 to the report; the journal's part is `fortunes_platform.people`.
+
+A library of uploaded books is a `books.Shelf` (where the books live and
+how the app reads a finished one) with `books.Jobs` for its imports, and an
+import that hands its subject's two lanes to `pdfimport.read_pdf`. The app's
+import is one function, which the child process runs:
+
+```python
+SHELF = books.Shelf("library", load_text)  # load_text(path, owner, manifest)
+JOBS = books.Jobs()
+
+def import_book(pdf_path, dest, owner, name, author, allow_vision, on_progress):
+    read = pdfimport.read_pdf(pdf_path, dest, owner, text_lane=find_my_headings,
+                              vision_lane=from_transcripts, vision=VISION,
+                              allow_vision=allow_vision, on_progress=on_progress)
+    ...  # write what it found, then manifest.yaml last
+
+JOBS.start(owner, slug, name, lambda progress: pdfimport.run_isolated(
+    "myapp.libraryimport:import_book", dest / "source.pdf", dest, owner, name,
+    author, allow_vision, progress))
+```
 
 App code and its tests reach the AI call through `fortunes_platform.ai`
 (`ai.config()`, `ai.interpret_stream(...)`), so a test's stand-in for it

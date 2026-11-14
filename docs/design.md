@@ -107,6 +107,25 @@ Each step leaves both apps' full test suites passing, and is its own release.
    under a dime keeps two significant figures, and a voice billed by the
    audio token is priced per character.
 
+6. **The library of uploaded books.** Both apps keep books people upload
+   (Tarotarium's guidebooks, I Ching's translations and commentaries), and
+   I Ching's began as a port of Tarotarium's. Only finding a card's or a
+   hexagram's passage in a book is the subject's. *Done in v0.10.0:* keeping
+   the books (`books.py`: each person's own and the shared ones, sharing by
+   moving the folder, handing them on, import jobs, taking an upload) and
+   reading a PDF (`pdfimport.py`: the lane a book needs, its lines, outline
+   and printed contents, rendering its pages, a scan transcribed by a vision
+   model with the owner's leave and its transcripts kept, and the whole import
+   run in a child process that limits itself, `pdfworker.py`). Each app hands
+   in its folder's name and manifest words, its heading finder for each lane
+   and its vision prompt. Fixes one app had went to both: Tarotarium's import
+   now runs in the limited child process, with a cap on pages, renders
+   bounded in size, one import at a time a person, the daily AI budget held
+   page by page, and every slug checked before it reaches a path. Fixes
+   neither had: a hyphen where a word breaks across lines is read as a hyphen,
+   not as pdfium's control code, and a page the vision model could not read
+   is tried again when the book is read again.
+
 ## Rules
 
 - Nothing personal and nothing about where an app is hosted goes in this
