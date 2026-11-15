@@ -63,6 +63,35 @@
 		return href === '/' ? path === '/' : path.startsWith(href);
 	}
 
+	// Wider than the screen (a phone held upright, or larger text), the links
+	// slide sideways under a finger instead of pushing the whole page out: the
+	// edge with more links beyond it fades, and the page you are on is brought
+	// into view.
+	let strip = $state<HTMLElement | undefined>();
+	let moreBefore = $state(false);
+	let moreAfter = $state(false);
+
+	function edges() {
+		if (!strip) return;
+		moreBefore = strip.scrollLeft > 1;
+		moreAfter = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1;
+	}
+
+	$effect(() => {
+		if (!strip || typeof ResizeObserver === 'undefined') return;
+		const watch = new ResizeObserver(edges);
+		watch.observe(strip);
+		for (const a of strip.children) watch.observe(a); // their text's font arriving
+		return () => watch.disconnect();
+	});
+
+	$effect(() => {
+		void path; // again on every page
+		const here = strip?.querySelector<HTMLElement>('a.active');
+		if (strip && here) strip.scrollLeft = Math.max(0, here.offsetLeft - (strip.clientWidth - here.offsetWidth) / 2);
+		edges();
+	});
+
 	async function doLogout() {
 		try {
 			const r = await fetch('/auth/logout', { method: 'POST' });
@@ -90,7 +119,7 @@
 			</span>
 			{#if versionLabel}<span class="version">{versionLabel}</span>{/if}
 		</div>
-		<nav>
+		<nav bind:this={strip} onscroll={edges} class:more-before={moreBefore} class:more-after={moreAfter}>
 			{#each links as link (link.href)}
 				<a href={link.href} class:active={isActive(link.href)}>{link.label}</a>
 			{/each}
@@ -163,9 +192,41 @@
 	nav {
 		display: flex;
 		gap: 1.2rem;
+		/* Narrower than its links, the row slides rather than overflows. */
+		position: relative; /* the links' offsets are the row's */
+		min-width: 0;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+		/* room inside the row for a link's focus ring, which it would clip;
+		   the margin keeps the links where they were */
+		padding: 0.3rem;
+		margin: -0.3rem;
+		--fade: 2rem;
+	}
+
+	nav::-webkit-scrollbar {
+		display: none;
+	}
+
+	nav.more-after {
+		-webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--fade)), transparent);
+		mask-image: linear-gradient(to right, #000 calc(100% - var(--fade)), transparent);
+	}
+
+	nav.more-before {
+		-webkit-mask-image: linear-gradient(to left, #000 calc(100% - var(--fade)), transparent);
+		mask-image: linear-gradient(to left, #000 calc(100% - var(--fade)), transparent);
+	}
+
+	nav.more-before.more-after {
+		-webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+		mask-image: linear-gradient(to right, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
 	}
 
 	nav a {
+		flex: none;
+		white-space: nowrap;
 		color: var(--text-dim);
 		padding-bottom: 0.2rem;
 	}
@@ -206,8 +267,9 @@
 		border-bottom-color: var(--gold);
 	}
 
-	/* On a phone the links take a row of their own, and the account goes up
-	   beside the title rather than onto a third row by itself. */
+	/* On a phone the links take a row of their own (sliding, if they still do
+	   not fit), and the account goes up beside the title rather than onto a
+	   third row by itself. */
 	@media (max-width: 480px) {
 		header {
 			gap: 1rem;
@@ -218,7 +280,7 @@
 		}
 		nav {
 			order: 2;
-			flex-basis: 100%;
+			flex-basis: calc(100% + 0.6rem); /* the full row, past the focus ring's margin */
 		}
 	}
 
